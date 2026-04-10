@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Window IoT Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<style>
+   :root {
+    --bg: #07090f;
+    --panel: #0d1117;
+    --panel2: #111827;
+    --border: #1e2d3d;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --warn: #ffb800;
+    --danger: #ff4d4d;
+    --text: #e2eaf4;
+    --muted: #4a6280;
+    --glow: 0 0 18px rgba(0,212,255,0.35);
+    --glow2: 0 0 18px rgba(0,255,157,0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 24px 20px; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand { display: flex; align-items: center; gap: 14px; }
+
+  .logo-ring {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: var(--glow);
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+    50% { box-shadow: 0 0 28px rgba(0,212,255,0.7); }
+  }
+
+  .logo-ring svg { width: 24px; height: 24px; }
+
+  .brand-text h1 {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+  }
+
+  .brand-text p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .header-right { display: flex; align-items: center; gap: 20px; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(0,255,157,0.08);
+    border: 1px solid rgba(0,255,157,0.25);
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--accent2);
+    text-transform: uppercase;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: blink 1.4s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+  #live-clock {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #0a1628 0%, #0d1f38 100%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .window-visual { flex-shrink: 0; }
+
+  .window-frame {
+    width: 100px; height: 120px;
+    border: 3px solid var(--accent);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--glow);
+    background: rgba(0,212,255,0.03);
+  }
+
+  .window-pane {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(0,212,255,0.15), rgba(0,212,255,0.05));
+    transition: height 1.2s cubic-bezier(0.4,0,0.2,1);
+    border-top: 2px solid rgba(0,212,255,0.5);
+  }
+
+  .window-center-bar {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 50%; transform: translateX(-50%);
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .window-horiz {
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    height: 3px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .hero-info { flex: 1; }
+
+  .window-state-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+    transition: color 0.5s;
+  }
+
+  .hero-sub {
+    font-size: 0.82rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+
+  .open-pct-bar {
+    height: 6px;
+    background: var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    width: 260px;
+    margin-bottom: 8px;
+  }
+
+  .open-pct-fill {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 1.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .open-pct-label { font-size: 0.72rem; color: var(--muted); }
+
+  .hero-reason {
+    font-size: 0.85rem;
+    color: var(--warn);
+    margin-top: 10px;
+    font-style: italic;
+  }
+
+  .manual-btn {
+    background: linear-gradient(135deg, #0a3d5c, #0d2d45);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    padding: 10px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-transform: uppercase;
+  }
+
+  .manual-btn:hover {
+    background: rgba(0,212,255,0.15);
+    box-shadow: var(--glow);
+    transform: translateY(-1px);
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s, box-shadow 0.4s;
+  }
+
+  .card:hover { border-color: rgba(0,212,255,0.3); }
+
+  .card-accent-line {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .card-label {
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .card-icon { font-size: 1rem; }
+
+  .card-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+    transition: color 0.5s;
+  }
+
+  .card-unit {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--muted);
+    margin-left: 3px;
+  }
+
+  .card-status {
+    font-size: 0.72rem;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .sparkline { margin-top: 12px; }
+  .sparkline canvas { display: block; }
+
+  .alerts-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .alerts-header {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-transform: uppercase;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.82rem;
+    animation: slideIn 0.4s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .alert-item:last-child { border-bottom: none; }
+
+  .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .alert-time { font-size: 0.68rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
+
+  .chart-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .chart-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .status-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+
+  .status-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+  }
+
+  .status-key { color: var(--muted); }
+  .status-val { font-weight: 500; }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+  }
+
+  @media(max-width:900px) {
+    .grid-3 { grid-template-columns: repeat(2,1fr); }
+    .grid-4 { grid-template-columns: repeat(2,1fr); }
+    header { flex-direction: column; gap: 14px; text-align: center; }
+    .hero { flex-direction: column; text-align: center; }
+    .open-pct-bar { width: 100%; }
+  }
+
+  @media(max-width:560px) {
+    .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="logo-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2" stroke-linecap="round">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <line x1="12" y1="3" x2="12" y2="21"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <circle cx="12" cy="12" r="2" fill="#00d4ff" stroke="none"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>SmartWin · ESP32</h1>
+        <p>IoT Window Automation System</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="status-pill"><div class="status-dot"></div><span>Connecting…</span></div>
+      <div id="live-clock">--:--:--</div>
+    </div>
+  </header>
+
+  <!-- HERO WINDOW STATUS -->
+  <div class="hero">
+    <div class="window-visual">
+      <div class="window-frame">
+        <div class="window-center-bar"></div>
+        <div class="window-horiz"></div>
+        <div class="window-pane" id="windowPane" style="height:0%"></div>
+      </div>
+    </div>
+    <div class="hero-info">
+      <div class="window-state-label" id="windowStateLabel" style="color:var(--accent2)">--</div>
+      <div class="hero-sub">Window Position · Servo Controlled</div>
+      <div class="open-pct-bar"><div class="open-pct-fill" id="openPctFill" style="width:0%"></div></div>
+      <div class="open-pct-label">Opening: <span id="openPctText">0</span>%</div>
+      <div class="hero-reason" id="heroReason">⚡ Waiting for data…</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end;">
+      <button class="manual-btn" onclick="toggleManual()">⚙ Manual Override</button>
+      <div style="font-size:0.68rem;color:var(--muted);text-align:right;">Last updated<br><span id="lastUpdated">—</span></div>
+    </div>
+  </div>
+
+  <!-- SENSOR CARDS ROW 1 -->
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#ff6b35,#ff4d4d)"></div>
+      <div class="card-label"><span class="card-icon">🌡️</span> Temperature · DHT22</div>
+      <div class="card-value" id="tempVal">--<span class="card-unit">°C</span></div>
+      <div class="card-status" id="tempStatus"></div>
+      <div class="sparkline"><canvas id="tempSpark" width="220" height="44"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#00b4d8,#0077b6)"></div>
+      <div class="card-label"><span class="card-icon">💧</span> Humidity · DHT22</div>
+      <div class="card-value" id="humVal">--<span class="card-unit">%</span></div>
+      <div class="card-status" id="humStatus"></div>
+      <div class="sparkline"><canvas id="humSpark" width="220" height="44"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#8ac926,#2dc653)"></div>
+      <div class="card-label"><span class="card-icon">🌿</span> Air Quality · MQ135</div>
+      <div class="card-value" id="aqVal">--<span class="card-unit">ppm</span></div>
+      <div class="card-status" id="aqStatus"></div>
+      <div class="sparkline"><canvas id="aqSpark" width="220" height="44"></canvas></div>
+    </div>
+  </div>
+
+  <!-- SENSOR CARDS ROW 2 -->
+  <div class="grid-4">
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#ffd166,#f4a261)"></div>
+      <div class="card-label"><span class="card-icon">☀️</span> Light · LDR</div>
+      <div class="card-value" id="lightVal" style="font-size:1.5rem">--<span class="card-unit">lux</span></div>
+      <div class="card-status" id="lightStatus"></div>
+    </div>
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#4cc9f0,#4361ee)"></div>
+      <div class="card-label"><span class="card-icon">🌧️</span> Rain Sensor</div>
+      <div class="card-value" id="rainVal" style="font-size:1.4rem; color:var(--accent)">--</div>
+      <div class="card-status" id="rainStatus"></div>
+    </div>
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#f72585,#b5179e)"></div>
+      <div class="card-label"><span class="card-icon">🚶</span> Motion · PIR</div>
+      <div class="card-value" id="pirVal" style="font-size:1.4rem; color:var(--accent)">--</div>
+      <div class="card-status" id="pirStatus"></div>
+    </div>
+    <div class="card">
+      <div class="card-accent-line" style="background:linear-gradient(90deg,#7b2d8b,#c77dff)"></div>
+      <div class="card-label"><span class="card-icon">🔵</span> Pressure · BMP180</div>
+      <div class="card-value" id="pressVal" style="font-size:1.3rem">--<span class="card-unit">hPa</span></div>
+      <div class="card-status" id="pressStatus"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY CHART + ALERTS -->
+  <div class="grid-2">
+    <div class="chart-card">
+      <div class="chart-title">📈 Temperature & Humidity · Last 30 Readings</div>
+      <canvas id="histChart" width="540" height="200"></canvas>
+    </div>
+    <div class="alerts-panel">
+      <div class="alerts-header">🔔 System Alerts &amp; Events</div>
+      <div id="alertsList"></div>
+    </div>
+  </div>
+
+  <!-- SYSTEM STATUS -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-label" style="margin-bottom:14px;">⚙️ System Status · ESP32</div>
+    <div class="status-grid">
+      <div class="status-item"><span class="status-key">WiFi Signal</span><span class="status-val" id="sWifi">—</span></div>
+      <div class="status-item"><span class="status-key">Uptime</span><span class="status-val" id="sUptime">—</span></div>
+      <div class="status-item"><span class="status-key">Free Heap</span><span class="status-val" id="sHeap">—</span></div>
+      <div class="status-item"><span class="status-key">Servo Angle</span><span class="status-val" id="sServo">—</span></div>
+      <div class="status-item"><span class="status-key">Auto Mode</span><span class="status-val" id="sAuto">ON</span></div>
+      <div class="status-item"><span class="status-key">Data Refresh</span><span class="status-val">Every 3s</span></div>
+    </div>
+  </div>
+
+  <footer>ESP32 · DHT22 · PIR · LDR · MQ135 · BMP180 · Rain Sensor · Servo · Relay &nbsp;|&nbsp; Karthikeya · Smart Window System</footer>
+</div>
+
+<script>
+// ========== CONFIG ==========
+const API_URL = "http://172.16.214.9:5000/api/data";   // Change to full URL e.g. 'http://192.168.x.x:5000/api/data' if needed
+
+// ========== STATE ==========
+let autoMode = true;
+let startTime = Date.now();
+let prevRain = false;
+let prevMotion = false;
+let iteration = 0;
+
+const histTemp = [], histHum = [];
+const sparkData = { temp: [], hum: [], aq: [] };
+const alerts = [];
+
+// ========== CONNECTION STATUS ==========
+function setConnectionStatus(online) {
+  const dot  = document.querySelector('.status-dot');
+  const pill = document.querySelector('.status-pill');
+  if (online) {
+    dot.style.background       = '#00ff9d';
+    dot.style.animation        = '';
+    pill.style.color            = '#00ff9d';
+    pill.querySelector('span').textContent = 'Live · ESP32 Connected';
+  } else {
+    dot.style.background       = '#ff4d4d';
+    dot.style.animation        = 'none';
+    pill.style.color            = '#ff4d4d';
+    pill.querySelector('span').textContent = 'Offline · Waiting for ESP32…';
+  }
+}
+
+// ========== WINDOW REASON (display-only) ==========
+function decideReason(d) {
+  if (d.rain)        return '🌧️ Rain detected — window closed';
+  if (d.temp > 32)   return '🌡️ High temp (' + (+d.temp).toFixed(1) + '°C) — ventilating';
+  if (d.aq > 450)    return '🌿 Poor air quality — opening window';
+  if (d.temp < 22)   return '❄️ Low temp — keeping window closed';
+  if (d.light < 200) return '🌙 Night detected — closing window';
+  return '✅ Conditions optimal — window open';
+}
+
+// ========== SPARKLINE ==========
+function drawSparkline(canvasId, data, color) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  if (data.length < 2) return;
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => ({
+    x: (i / (data.length - 1)) * W,
+    y: H - ((v - min) / range) * (H - 8) - 4
+  }));
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, color + '55');
+  grad.addColorStop(1, color + '05');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, H);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  const last = pts[pts.length - 1];
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+// ========== HISTORY CHART ==========
+function drawHistChart() {
+  const c = document.getElementById('histChart');
+  if (!c || histTemp.length < 2) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = (i / 4) * H;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  function drawLine(data, color, minV, maxV) {
+    const range = maxV - minV || 1;
+    const pts = data.map((v, i) => ({
+      x: (i / (data.length - 1)) * W,
+      y: H - ((v - minV) / range) * (H - 16) - 8
+    }));
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  drawLine(histTemp, '#ff6b35', 15, 45);
+  drawLine(histHum,  '#00b4d8', 20, 100);
+  ctx.font = '11px DM Sans';
+  ctx.fillStyle = '#ff6b35'; ctx.fillText('● Temperature (°C)', 10, 16);
+  ctx.fillStyle = '#00b4d8'; ctx.fillText('● Humidity (%)',     160, 16);
+}
+
+// ========== ALERTS ==========
+function pushAlert(msg, color) {
+  const now = new Date().toLocaleTimeString();
+  alerts.unshift({ msg, color, time: now });
+  if (alerts.length > 8) alerts.pop();
+  document.getElementById('alertsList').innerHTML = alerts.map(a => `
+    <div class="alert-item">
+      <div class="alert-dot" style="background:${a.color}"></div>
+      <div>${a.msg}</div>
+      <div class="alert-time">${a.time}</div>
+    </div>`).join('');
+}
+
+// ========== CLOCK ==========
+function updateClock() {
+  document.getElementById('live-clock').textContent = new Date().toLocaleTimeString();
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ========== UPTIME ==========
+function getUptime() {
+  const s = Math.floor((Date.now() - startTime) / 1000);
+  const m = Math.floor(s / 60), sec = s % 60;
+  return m + 'm ' + sec + 's';
+}
+
+// ========== MANUAL OVERRIDE ==========
+function toggleManual() {
+  autoMode = !autoMode;
+  if (!autoMode) {
+    pushAlert('🎮 Manual override activated', '#ffb800');
+    document.getElementById('sAuto').textContent = 'MANUAL';
+    document.getElementById('sAuto').style.color = '#ffb800';
+  } else {
+    pushAlert('🤖 Auto mode restored', '#00ff9d');
+    document.getElementById('sAuto').textContent = 'ON';
+    document.getElementById('sAuto').style.color = '';
+  }
+}
+
+// ========== RENDER ==========
+function renderData(d) {
+  iteration++;
+
+  // Normalise field names (handle both snake_case and camelCase from Flask)
+  d.aq       = d.aq       ?? d.air_quality   ?? 0;
+  d.light    = d.light    ?? d.light_level   ?? 0;
+  d.rain     = !!(d.rain  ?? d.isRaining     ?? false);
+  d.motion   = !!(d.motion ?? d.motionDetected ?? false);
+  d.wifi     = d.wifi     ?? d.wifi_signal   ?? '—';
+  d.pressure = d.pressure ?? 1013;
+
+  const servoDeg = d.servo_angle ?? d.servoAngle ?? 0;
+  const winOpen  = d.window_open ?? d.windowOpen ?? (servoDeg > 5);
+  const openPct  = Math.round((servoDeg / 90) * 100);
+
+  // Sparkline data
+  sparkData.temp.push(+d.temp);    if (sparkData.temp.length > 30) sparkData.temp.shift();
+  sparkData.hum.push(+d.humidity); if (sparkData.hum.length  > 30) sparkData.hum.shift();
+  sparkData.aq.push(+d.aq);        if (sparkData.aq.length   > 30) sparkData.aq.shift();
+  histTemp.push(+d.temp);          if (histTemp.length > 30) histTemp.shift();
+  histHum.push(+d.humidity);       if (histHum.length  > 30) histHum.shift();
+
+  // Temperature
+  const tEl = document.getElementById('tempVal');
+  tEl.childNodes[0].textContent = (+d.temp).toFixed(1);
+  tEl.style.color = d.temp > 32 ? '#ff4d4d' : d.temp < 20 ? '#00b4d8' : '#00ff9d';
+  document.getElementById('tempStatus').innerHTML =
+    d.temp > 32 ? '<span style="color:#ff4d4d">⚠ High — Window opening</span>'
+    : d.temp < 20 ? '<span style="color:#00b4d8">❄ Low — Window closing</span>'
+    : '<span style="color:#00ff9d">✓ Comfortable range</span>';
+
+  // Humidity
+  const hEl = document.getElementById('humVal');
+  hEl.childNodes[0].textContent = (+d.humidity).toFixed(1);
+  hEl.style.color = d.humidity > 75 ? '#4361ee' : '#00d4ff';
+  document.getElementById('humStatus').innerHTML =
+    d.humidity > 75 ? '<span style="color:#4361ee">💧 High humidity</span>'
+    : '<span style="color:#00d4ff">✓ Normal</span>';
+
+  // Air Quality
+  const aqEl = document.getElementById('aqVal');
+  aqEl.childNodes[0].textContent = Math.round(d.aq);
+  aqEl.style.color = d.aq > 450 ? '#ff4d4d' : d.aq > 350 ? '#ffb800' : '#8ac926';
+  document.getElementById('aqStatus').innerHTML =
+    d.aq > 450 ? '<span style="color:#ff4d4d">⚠ Poor — Ventilating</span>'
+    : d.aq > 350 ? '<span style="color:#ffb800">⚡ Moderate</span>'
+    : '<span style="color:#8ac926">✓ Good</span>';
+
+  // Light
+  document.getElementById('lightVal').childNodes[0].textContent = Math.round(d.light);
+  document.getElementById('lightStatus').innerHTML =
+    d.light < 200 ? '<span style="color:#ffd166">🌙 Night</span>'
+    : '<span style="color:#f4a261">☀️ Day</span>';
+
+  // Rain
+  document.getElementById('rainVal').textContent = d.rain ? 'RAIN' : 'DRY';
+  document.getElementById('rainVal').style.color = d.rain ? '#4cc9f0' : '#00ff9d';
+  document.getElementById('rainStatus').innerHTML =
+    d.rain ? '<span style="color:#4cc9f0">🌧️ Detected — window closing</span>'
+    : '<span style="color:#00ff9d">✓ No rain</span>';
+
+  // PIR
+  document.getElementById('pirVal').textContent = d.motion ? 'MOTION' : 'CLEAR';
+  document.getElementById('pirVal').style.color = d.motion ? '#f72585' : '#00ff9d';
+  document.getElementById('pirStatus').innerHTML =
+    d.motion ? '<span style="color:#f72585">🚨 Alert! Motion detected</span>'
+    : '<span style="color:#00ff9d">✓ Secure</span>';
+
+  // Pressure
+  document.getElementById('pressVal').childNodes[0].textContent = (+d.pressure).toFixed(1);
+  document.getElementById('pressStatus').innerHTML = '<span style="color:#c77dff">✓ Stable</span>';
+
+  // Window Hero
+  document.getElementById('openPctFill').style.width = openPct + '%';
+  document.getElementById('openPctText').textContent = openPct;
+  document.getElementById('windowPane').style.height = openPct + '%';
+  const lbl = document.getElementById('windowStateLabel');
+  lbl.textContent = winOpen ? 'OPEN' : 'CLOSED';
+  lbl.style.color = winOpen ? '#00ff9d' : '#ff4d4d';
+  document.getElementById('heroReason').textContent = decideReason(d);
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+  // System Status
+  document.getElementById('sWifi').textContent   = d.wifi + (typeof d.wifi === 'number' ? ' dBm' : '');
+  document.getElementById('sUptime').textContent = getUptime();
+  document.getElementById('sHeap').textContent   = d.heap ? d.heap + ' KB' : '— KB';
+  document.getElementById('sServo').textContent  = servoDeg + '°';
+
+  // Sparklines + History
+  drawSparkline('tempSpark', sparkData.temp, '#ff6b35');
+  drawSparkline('humSpark',  sparkData.hum,  '#00b4d8');
+  drawSparkline('aqSpark',   sparkData.aq,   '#8ac926');
+  drawHistChart();
+
+  // State-change alerts
+  if (d.rain   && !prevRain)   pushAlert('🌧️ Rain detected — window closed automatically', '#4cc9f0');
+  if (!d.rain  &&  prevRain)   pushAlert('☀️ Rain stopped — resuming auto mode', '#00ff9d');
+  if (d.motion && !prevMotion) pushAlert('🚨 Motion detected!', '#f72585');
+  if (d.temp > 34 && iteration % 5 === 0) pushAlert('🌡️ High temperature: ' + (+d.temp).toFixed(1) + '°C', '#ff4d4d');
+  if (d.aq > 480  && iteration % 7 === 0) pushAlert('🌿 Air quality degraded: ' + Math.round(d.aq) + ' ppm', '#ffb800');
+
+  prevRain   = d.rain;
+  prevMotion = d.motion;
+}
+
+// ========== FETCH LOOP ==========
+async function fetchData() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    setConnectionStatus(true);
+    renderData(data);
+  } catch (err) {
+    setConnectionStatus(false);
+    console.warn('Fetch failed:', err.message);
+  }
+}
+
+// Boot
+pushAlert('🟢 Dashboard loaded — connecting to ESP32…', '#00ff9d');
+setConnectionStatus(false);
+fetchData();
+setInterval(fetchData, 3000);
+</script>
+</body>
+</html>
